@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package shop.order.v1beta1;
+
+option go_package = "github.com/demeero/shop-sandbox/proto/gen/go/shop/order/v1beta1";
+
+import "shop/catalog/v1beta1/catalog.proto";
+import "shop/money/v1/money.proto";
+
+message Order {
+    string id = 1;
+    string customer_id = 2;
+    repeated OrderItem items = 3;
+    money.v1.Money total = 4;
+    ShippingAddress shipping_address = 5;
+    Status status = 6;
+}
+
+message OrderItem {
+    string id = 1;
+    shop.catalog.v1beta1.Product product = 2;
+    uint32 quantity = 3;
+    money.v1.Money amount = 4;
+}
+
+enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_PENDING = 1;
+    STATUS_PROCESSING = 2;
+    STATUS_CANCELED = 3;
+    STATUS_COMPLETED = 4;
+}
+
+message ShippingAddress {
+    string contact_name = 1;
+    string phone = 2;
+    string city = 3;
+    string address1 = 4;
+    string address2 = 5;
+}
