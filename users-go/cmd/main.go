@@ -5,7 +5,9 @@ import (
 	"log"
 	"net"
 
+	pb "github.com/demeero/shop-sandbox/proto/gen/go/shop/user/v1beta1"
 	"github.com/demeero/shop-sandbox/users/config"
+	"github.com/demeero/shop-sandbox/users/internal/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -23,6 +25,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
+	pb.RegisterUserServiceServer(grpcServer, service.New())
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve GRPC: %v", err)
 	}

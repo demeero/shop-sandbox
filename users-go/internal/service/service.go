@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 
-	pb "github.com/demeero/shop-sandbox/proto/gen/go/github.com/demeero/shop-sandbox/proto/gen/go/user/v1beta1"
+	pb "github.com/demeero/shop-sandbox/proto/gen/go/shop/user/v1beta1"
 )
 
 type Service struct {
-	pb.UnimplementedUserAPIServer
+	pb.UnimplementedUserServiceServer
 	listUsers *ListUsers
 }
 
