@@ -11,8 +11,8 @@ type Service struct {
 	listUsers *ListUsers
 }
 
-func New() *Service {
-	return &Service{listUsers: NewListUsers()}
+func New(repo Repository) *Service {
+	return &Service{listUsers: NewListUsers(repo)}
 }
 
 func (s *Service) ListUsers(ctx context.Context, request *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
