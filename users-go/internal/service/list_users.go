@@ -6,40 +6,18 @@ import (
 	pb "github.com/demeero/shop-sandbox/proto/gen/go/shop/user/v1beta1"
 )
 
-var users = map[string]*pb.User{
-	"1": {
-		Id:    "1",
-		Email: "user1@gmail.com",
-	},
-	"2": {
-		Id:    "2",
-		Email: "user1@gmail.com",
-	},
-	"3": {
-		Id:    "3",
-		Email: "user1@gmail.com",
-	},
-	"4": {
-		Id:    "4",
-		Email: "user1@gmail.com",
-	},
-	"5": {
-		Id:    "5",
-		Email: "user1@gmail.com",
-	},
-}
-
 type ListUsers struct {
+	repo Repository
 }
 
-func NewListUsers() *ListUsers {
-	return &ListUsers{}
+func NewListUsers(repo Repository) *ListUsers {
+	return &ListUsers{repo: repo}
 }
 
-func (c *ListUsers) Execute(_ context.Context, _ *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
-	result := make([]*pb.User, 0, len(users))
-	for _, u := range users {
-		result = append(result, u)
+func (c *ListUsers) Execute(ctx context.Context, _ *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
+	users, err := c.repo.Fetch(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return &pb.ListUsersResponse{Users: result}, nil
+	return &pb.ListUsersResponse{Users: users}, nil
 }

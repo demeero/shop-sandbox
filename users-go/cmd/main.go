@@ -1,17 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
 
 	pb "github.com/demeero/shop-sandbox/proto/gen/go/shop/user/v1beta1"
-	"github.com/demeero/shop-sandbox/users/config"
-	"github.com/demeero/shop-sandbox/users/internal/service"
+	"github.com/kelseyhightower/envconfig"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/kelseyhightower/envconfig"
+	"github.com/demeero/shop-sandbox/users/config"
+	"github.com/demeero/shop-sandbox/users/internal/service"
+	"github.com/demeero/shop-sandbox/users/internal/storage/mongo"
 )
 
 func main() {
@@ -25,7 +28,14 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
-	pb.RegisterUserServiceServer(grpcServer, service.New())
+
+	repo, err := mongo.New(context.Background(), options.Client().ApplyURI(cfg.Mongo.URI))
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := service.New(repo)
+	pb.RegisterUserServiceServer(grpcServer, s)
+
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve GRPC: %v", err)
 	}
