@@ -12,7 +12,7 @@ type Service struct {
 }
 
 func New(repo Repository) *Service {
-	return &Service{listUsers: NewListUsers(repo)}
+	return &Service{listUsers: NewListProducts(repo)}
 }
 
 func (s *Service) ListProducts(ctx context.Context, request *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {

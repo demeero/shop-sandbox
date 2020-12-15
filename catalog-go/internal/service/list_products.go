@@ -10,7 +10,7 @@ type ListProducts struct {
 	repo Repository
 }
 
-func NewListUsers(repo Repository) *ListProducts {
+func NewListProducts(repo Repository) *ListProducts {
 	return &ListProducts{repo: repo}
 }
 
