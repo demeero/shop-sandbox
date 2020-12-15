@@ -8,13 +8,13 @@ import (
 
 type Service struct {
 	pb.UnimplementedCatalogServiceServer
-	listUsers *ListProducts
+	listProducts *ListProducts
 }
 
 func New(repo Repository) *Service {
-	return &Service{listUsers: NewListProducts(repo)}
+	return &Service{listProducts: NewListProducts(repo)}
 }
 
 func (s *Service) ListProducts(ctx context.Context, request *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
-	return s.listUsers.Execute(ctx, request)
+	return s.listProducts.Execute(ctx, request)
 }
