@@ -13,6 +13,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201214182506-ac5db864eef8 h1:y5C1Yb1758gyx7B7CThAZv6F/tS9djX41crZ6j9qjZg=
 github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201214182506-ac5db864eef8/go.mod h1:NGd49mK1J37s6UwtimJlae/Nip/XR/g4jMXChed2ipg=
+github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201218002723-caa9527d71f6 h1:J5rwmFwUWXR1shT5DLBYPisMIg8ugccuKCrSqPpQmdw=
+github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201218002723-caa9527d71f6/go.mod h1:NGd49mK1J37s6UwtimJlae/Nip/XR/g4jMXChed2ipg=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.7/go.mod h1:cwu0lG7PUMfa9snN8LXBig5ynNVH9qI8YYLbd1fK2po=

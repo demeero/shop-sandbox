@@ -51,7 +51,7 @@ func (s *Storage) Fetch(ctx context.Context) ([]*orderPb.Order, error) {
 		o.Total = &moneyPb.Money{}
 		o.ShippingAddress = &orderPb.ShippingAddress{}
 		var address2 sql.NullString
-		err := rows.Scan(&o.Id, &o.CustomerId, &o.Status, &o.Total.Units, &o.Total.Nanos, &o.ShippingAddress.ContactName,
+		err := rows.Scan(&o.Id, &o.UserId, &o.Status, &o.Total.Units, &o.Total.Nanos, &o.ShippingAddress.ContactName,
 			&o.ShippingAddress.Phone, &o.ShippingAddress.City, &o.ShippingAddress.Address1, &address2)
 		if err != nil {
 			return nil, err
