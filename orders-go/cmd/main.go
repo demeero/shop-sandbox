@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/kelseyhightower/envconfig"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/demeero/shop-sandbox/orders/internal/config"
 	"github.com/demeero/shop-sandbox/orders/internal/service"
+	"github.com/demeero/shop-sandbox/orders/internal/storage/sql"
 )
 
 func main() {
@@ -27,7 +29,11 @@ func main() {
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 
-	s := service.New(nil)
+	repo, err := sql.New(cfg.SQL.Driver, cfg.SQL.Datasource)
+	if err != nil {
+		log.Fatalf("failed create repository: %+v", err)
+	}
+	s := service.New(repo)
 	pb.RegisterOrderServiceServer(grpcServer, s)
 
 	if err := grpcServer.Serve(lis); err != nil {

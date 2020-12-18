@@ -1,14 +1,15 @@
 package config
 
 type Config struct {
-	GRPC  GRPC
-	Mongo Mongo
+	GRPC GRPC
+	SQL  SQL
 }
 
 type GRPC struct {
 	Port int
 }
 
-type Mongo struct {
-	URI string
+type SQL struct {
+	Driver     string
+	Datasource string
 }

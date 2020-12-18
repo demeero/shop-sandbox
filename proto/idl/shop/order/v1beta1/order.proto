@@ -9,7 +9,7 @@ import "shop/money/v1/money.proto";
 
 message Order {
     string id = 1;
-    string customer_id = 2;
+    string user_id = 2;
     repeated OrderItem items = 3;
     money.v1.Money total = 4;
     ShippingAddress shipping_address = 5;
