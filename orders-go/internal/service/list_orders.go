@@ -6,15 +6,15 @@ import (
 	pb "github.com/demeero/shop-sandbox/proto/gen/go/shop/order/v1beta1"
 )
 
-type ListProducts struct {
+type ListOrders struct {
 	repo Repository
 }
 
-func NewListOrders(repo Repository) *ListProducts {
-	return &ListProducts{repo: repo}
+func NewListOrders(repo Repository) *ListOrders {
+	return &ListOrders{repo: repo}
 }
 
-func (c *ListProducts) Execute(ctx context.Context, _ *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
+func (c *ListOrders) Execute(ctx context.Context, _ *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
 	orders, err := c.repo.Fetch(ctx)
 	if err != nil {
 		return nil, err
