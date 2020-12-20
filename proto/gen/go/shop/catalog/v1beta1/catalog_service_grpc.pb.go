@@ -11,7 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion7
 
 // CatalogServiceClient is the client API for CatalogService service.
 //
@@ -49,12 +49,19 @@ type CatalogServiceServer interface {
 type UnimplementedCatalogServiceServer struct {
 }
 
-func (*UnimplementedCatalogServiceServer) ListProducts(context.Context, *ListProductsRequest) (*ListProductsResponse, error) {
+func (UnimplementedCatalogServiceServer) ListProducts(context.Context, *ListProductsRequest) (*ListProductsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProducts not implemented")
 }
-func (*UnimplementedCatalogServiceServer) mustEmbedUnimplementedCatalogServiceServer() {}
+func (UnimplementedCatalogServiceServer) mustEmbedUnimplementedCatalogServiceServer() {}
 
-func RegisterCatalogServiceServer(s *grpc.Server, srv CatalogServiceServer) {
+// UnsafeCatalogServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CatalogServiceServer will
+// result in compilation errors.
+type UnsafeCatalogServiceServer interface {
+	mustEmbedUnimplementedCatalogServiceServer()
+}
+
+func RegisterCatalogServiceServer(s grpc.ServiceRegistrar, srv CatalogServiceServer) {
 	s.RegisterService(&_CatalogService_serviceDesc, srv)
 }
 
