@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	catalogPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/catalog/v1beta1"
 	moneyPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/money/v1"
 	orderPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/order/v1beta1"
 )
@@ -57,7 +58,47 @@ func (s *Storage) Fetch(ctx context.Context) ([]*orderPb.Order, error) {
 			return nil, err
 		}
 		o.ShippingAddress.Address2 = address2.String
+		orderItems, err := s.fetchOrderItems(ctx, o.Id)
+		if err != nil {
+			return nil, err
+		}
+		o.Items = append(o.Items, orderItems...)
 		orders = append(orders, o)
 	}
 	return orders, nil
+}
+
+func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*orderPb.OrderItem, error) {
+	q := `
+		SELECT id,
+			   quantity,
+			   total_units,
+			   total_nanos,
+			   product_id,
+			   product_name
+		FROM order_item
+		WHERE order_id = $1  
+	`
+	rows, err := s.db.QueryContext(ctx, q, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var orderItems []*orderPb.OrderItem
+	for rows.Next() {
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		oi := &orderPb.OrderItem{}
+		oi.Amount = &moneyPb.Money{}
+		oi.Product = &catalogPb.Product{}
+		var productName string
+		err := rows.Scan(&oi.Id, &oi.Quantity, &oi.Amount.Units, &oi.Amount.Nanos, &oi.Product.Id, &productName)
+		if err != nil {
+			return nil, err
+		}
+		oi.Product.Name = productName
+		orderItems = append(orderItems, oi)
+	}
+	return orderItems, nil
 }
