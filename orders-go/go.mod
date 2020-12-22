@@ -9,5 +9,3 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	google.golang.org/grpc v1.34.0
 )
-
-replace github.com/demeero/shop-sandbox/proto/gen/go => ../proto/gen/go/
