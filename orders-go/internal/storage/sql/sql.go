@@ -24,7 +24,7 @@ func New(driver, datasource string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) Fetch(ctx context.Context) ([]*orderPb.Order, error) {
+func (s *Storage) Fetch(ctx context.Context, _ *orderPb.ListOrdersRequest) ([]*orderPb.Order, error) {
 	q := `
 		SELECT id,
 			   user_id,
@@ -38,16 +38,19 @@ func (s *Storage) Fetch(ctx context.Context) ([]*orderPb.Order, error) {
 			   address2
 		FROM "order"        
 	`
+
 	rows, err := s.db.QueryContext(ctx, q)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var orders []*orderPb.Order
 	for rows.Next() {
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
+
 		o := &orderPb.Order{}
 		o.Total = &moneyPb.Money{}
 		o.ShippingAddress = &orderPb.ShippingAddress{}
@@ -58,10 +61,12 @@ func (s *Storage) Fetch(ctx context.Context) ([]*orderPb.Order, error) {
 			return nil, err
 		}
 		o.ShippingAddress.Address2 = address2.String
+
 		orderItems, err := s.fetchOrderItems(ctx, o.Id)
 		if err != nil {
 			return nil, err
 		}
+
 		o.Items = append(o.Items, orderItems...)
 		orders = append(orders, o)
 	}
@@ -79,16 +84,19 @@ func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*order
 		FROM order_item
 		WHERE order_id = $1  
 	`
+
 	rows, err := s.db.QueryContext(ctx, q, orderID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+
 	var orderItems []*orderPb.OrderItem
 	for rows.Next() {
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
+
 		oi := &orderPb.OrderItem{}
 		oi.Amount = &moneyPb.Money{}
 		oi.Product = &catalogPb.Product{}
@@ -98,6 +106,7 @@ func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*order
 			return nil, err
 		}
 		oi.Product.Name = productName
+
 		orderItems = append(orderItems, oi)
 	}
 	return orderItems, nil
