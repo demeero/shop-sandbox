@@ -14,10 +14,20 @@ func NewListOrders(repo Repository) *ListOrders {
 	return &ListOrders{repo: repo}
 }
 
-func (c *ListOrders) Execute(ctx context.Context, _ *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
-	orders, err := c.repo.Fetch(ctx)
+func (c *ListOrders) Execute(ctx context.Context, req *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
+	setDefaults(req)
+	orders, err := c.repo.Fetch(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	return &pb.ListOrdersResponse{Orders: orders}, nil
+}
+
+func setDefaults(req *pb.ListOrdersRequest) {
+	if req.GetOrder() == pb.ListOrdersRequestOrder_LIST_ORDERS_REQUEST_ORDER_UNSPECIFIED {
+		req.Order = pb.ListOrdersRequestOrder_LIST_ORDERS_REQUEST_ORDER_DESC
+	}
+	if req.GetSort() == pb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_UNSPECIFIED {
+		req.Sort = pb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_CREATED_AT
+	}
 }
