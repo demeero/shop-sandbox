@@ -20,6 +20,33 @@ message ListOrdersRequest {
   // If page_size isn't provided, the server will decide the number of results to be returned.
   // Optional.
   string page_token = 2;
+
+  // Filter results by their IDs. Up to 200 IDs can be passed at once.
+  // The ids parameter cannot be used with any other ordering or filtering parameters (page_size, page_token, order, sort, state, etc)
+  // Invalid or unknown IDs will be ignored, so you should check that the results correspond to your request.
+  repeated string ids = 3;
+
+  // Sort order.
+  // Default: LIST_ORDERS_REQUEST_ORDER_DESC.
+  ListOrdersRequestOrder order = 4;
+
+  // Sort field.
+  // Default: LIST_ORDERS_REQUEST_SORT_CREATED_AT.
+  ListOrdersRequestSort sort = 5;
+
+  // Filter by status.
+  string status = 6;
+}
+
+enum ListOrdersRequestOrder {
+  LIST_ORDERS_REQUEST_ORDER_UNSPECIFIED = 0;
+  LIST_ORDERS_REQUEST_ORDER_DESC = 1;
+  LIST_ORDERS_REQUEST_ORDER_ASC = 2;
+}
+
+enum ListOrdersRequestSort {
+  LIST_ORDERS_REQUEST_SORT_UNSPECIFIED = 0;
+  LIST_ORDERS_REQUEST_SORT_CREATED_AT = 1;
 }
 
 message ListOrdersResponse {
