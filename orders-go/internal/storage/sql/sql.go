@@ -3,6 +3,9 @@ package sql
 import (
 	"context"
 	"database/sql"
+	"time"
+
+	"github.com/golang/protobuf/ptypes"
 
 	catalogPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/catalog/v1beta1"
 	moneyPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/money/v1"
@@ -35,7 +38,8 @@ func (s *Storage) Fetch(ctx context.Context, _ *orderPb.ListOrdersRequest) ([]*o
 			   phone,
 			   city,
 			   address1,
-			   address2
+			   address2,
+			   created_at
 		FROM "order"        
 	`
 
@@ -55,12 +59,14 @@ func (s *Storage) Fetch(ctx context.Context, _ *orderPb.ListOrdersRequest) ([]*o
 		o.Total = &moneyPb.Money{}
 		o.ShippingAddress = &orderPb.ShippingAddress{}
 		var address2 sql.NullString
+		var createTime time.Time
 		err := rows.Scan(&o.Id, &o.UserId, &o.Status, &o.Total.Units, &o.Total.Nanos, &o.ShippingAddress.ContactName,
-			&o.ShippingAddress.Phone, &o.ShippingAddress.City, &o.ShippingAddress.Address1, &address2)
+			&o.ShippingAddress.Phone, &o.ShippingAddress.City, &o.ShippingAddress.Address1, &address2, &createTime)
 		if err != nil {
 			return nil, err
 		}
 		o.ShippingAddress.Address2 = address2.String
+		o.CreateTime, _ = ptypes.TimestampProto(createTime)
 
 		orderItems, err := s.fetchOrderItems(ctx, o.Id)
 		if err != nil {
