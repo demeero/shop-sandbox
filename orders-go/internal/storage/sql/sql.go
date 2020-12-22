@@ -3,6 +3,8 @@ package sql
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -27,22 +29,8 @@ func New(driver, datasource string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) Fetch(ctx context.Context, _ *orderPb.ListOrdersRequest) ([]*orderPb.Order, error) {
-	q := `
-		SELECT id,
-			   user_id,
-			   order_status_id,
-			   total_units,
-			   total_nanos,
-			   contact_name,
-			   phone,
-			   city,
-			   address1,
-			   address2,
-			   created_at
-		FROM "order"        
-	`
-
+func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]*orderPb.Order, error) {
+	q := buildFetchOrdersQuery(req)
 	rows, err := s.db.QueryContext(ctx, q)
 	if err != nil {
 		return nil, err
@@ -116,4 +104,33 @@ func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*order
 		orderItems = append(orderItems, oi)
 	}
 	return orderItems, nil
+}
+
+func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) string {
+	q := `
+		SELECT id,
+			   user_id,
+			   order_status_id,
+			   total_units,
+			   total_nanos,
+			   contact_name,
+			   phone,
+			   city,
+			   address1,
+			   address2,
+			   created_at
+		FROM "order"      
+	`
+	if len(req.GetIds()) > 0 {
+		return q + " WHERE id IN(" + strings.Join(req.GetIds(), ",") + ")"
+	}
+	orderField := "created_at"
+	if req.GetSort() == orderPb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_UNSPECIFIED {
+		return q
+	}
+	orderType := "DESC"
+	if req.GetOrder() == orderPb.ListOrdersRequestOrder_LIST_ORDERS_REQUEST_ORDER_ASC {
+		orderType = "ASC"
+	}
+	return fmt.Sprintf("%s ORDER BY %s %s", q, orderField, orderType)
 }
