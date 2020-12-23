@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,18 +30,19 @@ func New(driver, datasource string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]*orderPb.Order, error) {
+func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]*orderPb.Order, string, error) {
 	q := buildFetchOrdersQuery(req)
 	rows, err := s.db.QueryContext(ctx, q)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rows.Close()
 
 	var orders []*orderPb.Order
-	for rows.Next() {
+	var nextToken string
+	for i := 0; rows.Next(); i++ {
 		if err := rows.Err(); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		o := &orderPb.Order{}
@@ -51,20 +53,25 @@ func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]
 		err := rows.Scan(&o.Id, &o.UserId, &o.Status, &o.Total.Units, &o.Total.Nanos, &o.ShippingAddress.ContactName,
 			&o.ShippingAddress.Phone, &o.ShippingAddress.City, &o.ShippingAddress.Address1, &address2, &createTime)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		o.ShippingAddress.Address2 = address2.String
 		o.CreateTime, _ = ptypes.TimestampProto(createTime)
 
 		orderItems, err := s.fetchOrderItems(ctx, o.Id)
 		if err != nil {
-			return nil, err
+			return nil, "", err
+		}
+
+		if i == int(req.GetPageSize()) {
+			nextToken = o.GetId()
+			break
 		}
 
 		o.Items = append(o.Items, orderItems...)
 		orders = append(orders, o)
 	}
-	return orders, nil
+	return orders, nextToken, nil
 }
 
 func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*orderPb.OrderItem, error) {
@@ -119,18 +126,32 @@ func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) string {
 			   address1,
 			   address2,
 			   created_at
-		FROM "order"      
+		FROM "order"
 	`
+	// filtering by id
 	if len(req.GetIds()) > 0 {
 		return q + " WHERE id IN(" + strings.Join(req.GetIds(), ",") + ")"
 	}
-	orderField := "created_at"
-	if req.GetSort() == orderPb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_UNSPECIFIED {
-		return q
+
+	// ordering
+	orderClause := ""
+	if req.GetSort() == orderPb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_CREATED_AT {
+		orderClause = "ORDER BY"
 	}
+	orderField := "created_at"
 	orderType := "DESC"
 	if req.GetOrder() == orderPb.ListOrdersRequestOrder_LIST_ORDERS_REQUEST_ORDER_ASC {
 		orderType = "ASC"
 	}
-	return fmt.Sprintf("%s ORDER BY %s %s", q, orderField, orderType)
+	orderClause = fmt.Sprintf("%s %s %s", orderClause, orderField, orderType)
+
+	// pagination
+	whereClause := "WHERE "
+	if req.GetPageToken() == "" {
+		whereClause += "id > 0"
+	} else {
+		whereClause += fmt.Sprintf("id <= '%s'", req.GetPageToken())
+	}
+
+	return fmt.Sprintf("%s %s %s %s", q, whereClause, orderClause, "LIMIT "+strconv.Itoa(int(req.GetPageSize()+1)))
 }

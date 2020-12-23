@@ -16,5 +16,5 @@ create table order_item
 alter table order_item
     owner to postgres;
 
-INSERT INTO public.order_item (id, quantity, total_units, total_nanos, product_id, product_name, order_id) VALUES (1, 1, 1, 0, '1', 'Product Name 1', 1);
-INSERT INTO public.order_item (id, quantity, total_units, total_nanos, product_id, product_name, order_id) VALUES (2, 2, 100, 20, '2', 'Product Name 2', 2);
+INSERT INTO public.order_item (id, quantity, total_units, total_nanos, product_id, product_name, order_id) VALUES (default, 1, 1, 0, '1', 'Product Name 1', 1);
+INSERT INTO public.order_item (id, quantity, total_units, total_nanos, product_id, product_name, order_id) VALUES (default, 2, 100, 20, '2', 'Product Name 2', 2);
