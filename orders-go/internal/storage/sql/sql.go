@@ -30,6 +30,30 @@ func New(driver, datasource string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
+func (s *Storage) UpdateStatus(ctx context.Context, statusID, orderID string) (bool, error) {
+	var updated bool
+	err := Tx(ctx, s.db, func(tx *sql.Tx) error {
+		q := `
+			UPDATE "order"
+			SET order_status_id=$1
+			WHERE id = $2
+		`
+		res, err := tx.ExecContext(ctx, q, statusID, orderID)
+		if err != nil {
+			return err
+		}
+		n, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if n > 0 {
+			updated = true
+		}
+		return nil
+	}, nil)
+	return updated, err
+}
+
 func (s *Storage) Create(ctx context.Context, order *orderPb.Order) (string, error) {
 	var orderID string
 	err := Tx(ctx, s.db, func(tx *sql.Tx) error {

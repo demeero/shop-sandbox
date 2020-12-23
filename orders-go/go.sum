@@ -17,6 +17,12 @@ github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201222231418-7b6f93ccab6c 
 github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201222231418-7b6f93ccab6c/go.mod h1:qL0i5b1uu19XrMSXKsHSseQfMJisWsMLW7szw9GFFVU=
 github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223004312-a78771959306 h1:/xIIFsrs4M1ctz6op28i2Mp+WbQHR8+Lli1J0xnh5wo=
 github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223004312-a78771959306/go.mod h1:qL0i5b1uu19XrMSXKsHSseQfMJisWsMLW7szw9GFFVU=
+github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223005146-86461313bd29 h1:rP1ceGnG3f9CoKm156fR8Mgozq6VsLwMdYEBFOurxJE=
+github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223005146-86461313bd29/go.mod h1:qL0i5b1uu19XrMSXKsHSseQfMJisWsMLW7szw9GFFVU=
+github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223141303-70be0e8d3fc6 h1:RaGK1vzajmV9r96QoH1Tcg883SE75+LO/09l4glvFhU=
+github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223141303-70be0e8d3fc6/go.mod h1:qL0i5b1uu19XrMSXKsHSseQfMJisWsMLW7szw9GFFVU=
+github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223151713-3a4c05e0f4a2 h1:TSevMqCIRta8f/nZdGfonYd+Gvy/ROwo5sIRJDUkbD4=
+github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223151713-3a4c05e0f4a2/go.mod h1:qL0i5b1uu19XrMSXKsHSseQfMJisWsMLW7szw9GFFVU=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.7/go.mod h1:cwu0lG7PUMfa9snN8LXBig5ynNVH9qI8YYLbd1fK2po=
