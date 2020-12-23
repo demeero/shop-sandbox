@@ -9,6 +9,7 @@ import "shop/order/v1beta1/order.proto";
 service OrderService {
   rpc ListOrders (ListOrdersRequest) returns (ListOrdersResponse) {}
   rpc CreateOrder (CreateOrderRequest) returns (CreateOrderResponse) {}
+  rpc UpdateStatus (UpdateStatusRequest) returns (UpdateStatusResponse) {}
 }
 
 message ListOrdersRequest {
@@ -64,3 +65,9 @@ message CreateOrderRequest {
 message CreateOrderResponse {
   Order order = 1;
 }
+
+message UpdateStatusRequest {
+  Status status = 1;
+}
+
+message UpdateStatusResponse {}
