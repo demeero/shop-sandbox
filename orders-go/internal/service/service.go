@@ -8,6 +8,7 @@ import (
 
 type Repository interface {
 	Fetch(context.Context, *pb.ListOrdersRequest) ([]*pb.Order, string, error)
+	Create(context.Context, *pb.Order) (string, error)
 }
 
 type Service struct {

@@ -23,3 +23,5 @@ alter table "order"
 
 INSERT INTO public."order" (id, user_id, total_units, total_nanos, contact_name, phone, city, address1, address2, order_status_id, created_at) VALUES (default, '2', 200, 40, 'Contact Name 2', '+380687333231', 'Odessa', 'NP #40', null, 2, '2020-12-22 22:04:45.489884');
 INSERT INTO public."order" (id, user_id, total_units, total_nanos, contact_name, phone, city, address1, address2, order_status_id, created_at) VALUES (default, '1', 1, 0, 'Contact Name 1', '+380687333230', 'Odessa', 'NP #40', null, 1, '2020-12-21 22:04:45.489884');
+
+ALTER SEQUENCE order_id_seq RESTART WITH 1000;
