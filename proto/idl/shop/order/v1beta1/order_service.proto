@@ -68,6 +68,7 @@ message CreateOrderResponse {
 
 message UpdateStatusRequest {
   Status status = 1;
+  string order_id = 2;
 }
 
 message UpdateStatusResponse {}
