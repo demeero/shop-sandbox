@@ -16,11 +16,11 @@ func NewListOrders(repo Repository) *ListOrders {
 
 func (c *ListOrders) Execute(ctx context.Context, req *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
 	setDefaults(req)
-	orders, err := c.repo.Fetch(ctx, req)
+	orders, nextToken, err := c.repo.Fetch(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.ListOrdersResponse{Orders: orders}, nil
+	return &pb.ListOrdersResponse{Orders: orders, NextPageToken: nextToken}, nil
 }
 
 func setDefaults(req *pb.ListOrdersRequest) {
@@ -29,5 +29,8 @@ func setDefaults(req *pb.ListOrdersRequest) {
 	}
 	if req.GetSort() == pb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_UNSPECIFIED {
 		req.Sort = pb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_CREATED_AT
+	}
+	if req.GetPageSize() == 0 {
+		req.PageSize = 200
 	}
 }
