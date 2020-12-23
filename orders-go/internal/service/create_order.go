@@ -15,6 +15,22 @@ func NewCreateOrder(repo Repository) *CreateOrder {
 	return &CreateOrder{repo: repo}
 }
 
-func (c *CreateOrder) Execute(_ context.Context, _ *pb.CreateOrderRequest) (*pb.CreateOrderResponse, error) {
-	return nil, errors.New("unimplemented")
+// TODO calculate order total
+func (c *CreateOrder) Execute(ctx context.Context, req *pb.CreateOrderRequest) (*pb.CreateOrderResponse, error) {
+	if req.GetOrder() == nil {
+		return nil, errors.New("field `order` is required")
+	}
+	req.GetOrder().Status = pb.Status_STATUS_PENDING
+	id, err := c.repo.Create(ctx, req.GetOrder())
+	if err != nil {
+		return nil, err
+	}
+	result, _, err := c.repo.Fetch(ctx, &pb.ListOrdersRequest{Ids: []string{id}, PageSize: 1})
+	if err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, errors.New("created order not found")
+	}
+	return &pb.CreateOrderResponse{Order: result[0]}, nil
 }

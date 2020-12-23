@@ -30,6 +30,43 @@ func New(driver, datasource string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
+func (s *Storage) Create(ctx context.Context, order *orderPb.Order) (string, error) {
+	var orderID string
+	err := Tx(ctx, s.db, func(tx *sql.Tx) error {
+		insertOrderQ := `
+			INSERT INTO "order" (user_id, order_status_id, total_units, total_nanos, contact_name, phone, city, address1, address2) 
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id 
+		`
+		total := order.GetTotal()
+		address := order.GetShippingAddress()
+		err := tx.QueryRowContext(ctx, insertOrderQ, order.GetUserId(), order.GetStatus(), total.GetUnits(),
+			total.GetNanos(), address.GetContactName(), address.GetPhone(), address.GetCity(), address.GetAddress1(), address.GetAddress2()).
+			Scan(&orderID)
+		if err != nil {
+			return err
+		}
+
+		insertOrderItemQ := `
+			INSERT INTO order_item (quantity, total_units, total_nanos, product_id, product_name, order_id) 
+			VALUES ($1, $2, $3, $4, $5, $6)
+		`
+		for _, oi := range order.GetItems() {
+			amount := oi.GetAmount()
+			product := oi.GetProduct()
+			_, err := tx.ExecContext(ctx, insertOrderItemQ, oi.GetQuantity(), amount.GetUnits(), amount.GetNanos(),
+				product.GetId(), product.GetName(), orderID)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}, nil)
+	if err != nil {
+		return "", err
+	}
+	return orderID, nil
+}
+
 func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]*orderPb.Order, string, error) {
 	q := buildFetchOrdersQuery(req)
 	rows, err := s.db.QueryContext(ctx, q)
