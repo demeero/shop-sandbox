@@ -25,7 +25,7 @@ func (c *CreateOrder) Execute(ctx context.Context, req *pb.CreateOrderRequest) (
 	if err != nil {
 		return nil, err
 	}
-	result, _, err := c.repo.Fetch(ctx, &pb.ListOrdersRequest{Ids: []string{id}, PageSize: 1})
+	result, _, err := c.repo.Fetch(ctx, &pb.ListOrdersRequest{Ids: []string{id}})
 	if err != nil {
 		return nil, err
 	}

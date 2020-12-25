@@ -92,14 +92,21 @@ func (s *Storage) Create(ctx context.Context, order *orderPb.Order) (string, err
 }
 
 func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]*orderPb.Order, string, error) {
-	q := buildFetchOrdersQuery(req)
+	pageSize := int(req.GetPageSize())
+	if pageSize == 0 {
+		pageSize = 1
+	}
+	q, err := buildFetchOrdersQuery(req)
+	if err != nil {
+		return nil, "", err
+	}
 	rows, err := s.db.QueryContext(ctx, q)
 	if err != nil {
 		return nil, "", err
 	}
 	defer rows.Close()
 
-	var orders []*orderPb.Order
+	orders := make([]*orderPb.Order, 0, pageSize)
 	var nextToken string
 	for i := 0; rows.Next(); i++ {
 		if err := rows.Err(); err != nil {
@@ -131,6 +138,12 @@ func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]
 
 		o.Items = append(o.Items, orderItems...)
 		orders = append(orders, o)
+	}
+	ordersLen := len(orders)
+	if ordersLen == pageSize {
+		last := orders[ordersLen-1]
+		createTime, _ := ptypes.Timestamp(last.GetCreateTime())
+		nextToken = pageToken{UUID: last.GetId(), CreatedAt: createTime}.Encode()
 	}
 	return orders, nextToken, nil
 }
@@ -174,7 +187,11 @@ func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*order
 	return orderItems, nil
 }
 
-func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) string {
+func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) (string, error) {
+	token := &pageToken{}
+	if err := token.Decode(req.GetPageToken()); err != nil {
+		return "", err
+	}
 	q := `
 		SELECT id,
 			   user_id,
@@ -191,7 +208,7 @@ func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) string {
 	`
 	// filtering by id
 	if len(req.GetIds()) > 0 {
-		return q + " WHERE id IN(" + strings.Join(req.GetIds(), ",") + ")"
+		return q + " WHERE id IN(" + strings.Join(req.GetIds(), ",") + ")", nil
 	}
 
 	// ordering
@@ -207,12 +224,12 @@ func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) string {
 	orderClause = fmt.Sprintf("%s %s %s", orderClause, orderField, orderType)
 
 	// pagination
-	whereClause := "WHERE "
-	if req.GetPageToken() == "" {
-		whereClause += "id > 0"
-	} else {
-		whereClause += fmt.Sprintf("id <= '%s'", req.GetPageToken())
+	whereClause := ""
+	if token.UUID != "" {
+		createdAt := token.CreatedAt.Format(time.RFC3339Nano)
+		whereClause = fmt.Sprintf("WHERE id < '%s' AND created_at <= '%s' ", token.UUID, createdAt)
 	}
 
-	return fmt.Sprintf("%s %s %s %s", q, whereClause, orderClause, "LIMIT "+strconv.Itoa(int(req.GetPageSize()+1)))
+	q = fmt.Sprintf("%s %s %s %s", q, whereClause, orderClause, "LIMIT "+strconv.Itoa(int(req.GetPageSize())))
+	return q, nil
 }
