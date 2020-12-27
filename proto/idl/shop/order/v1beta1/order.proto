@@ -21,7 +21,7 @@ message Order {
 message OrderItem {
   string id = 1;
   shop.catalog.v1beta1.Product product = 2;
-  uint32 quantity = 3;
+  int32 quantity = 3;
   money.v1.Money amount = 4;
 }
 
