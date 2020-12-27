@@ -46,7 +46,18 @@ func (s *Storage) Fetch(ctx context.Context, req *pb.ListOrdersRequest) ([]*pb.O
 		nextToken = pagetoken.PageToken{ID: last.ID, CreatedAt: last.CreatedAt}.Encode()
 	}
 
-	return ConvertOrders(orders), nextToken, nil
+	return convertToExternalOrders(orders), nextToken, nil
+}
+
+func (s *Storage) Create(ctx context.Context, order *pb.Order) (string, error) {
+	o := convertToInternalOrder(order)
+	result := s.db.WithContext(ctx).Create(&o)
+	return o.ID, result.Error
+}
+
+func (s *Storage) UpdateStatus(ctx context.Context, statusID, orderID string) (bool, error) {
+	result := s.db.WithContext(ctx).Model(&order{ID: orderID}).Update("order_status_id", statusID)
+	return result.RowsAffected > 0, result.Error
 }
 
 func (s *Storage) buildFetchOrdersQuery(ctx context.Context, req *pb.ListOrdersRequest) (*gorm.DB, error) {
@@ -80,13 +91,4 @@ func (s *Storage) buildFetchOrdersQuery(ctx context.Context, req *pb.ListOrdersR
 	}
 
 	return stmnt.Limit(int(req.GetPageSize())), nil
-}
-
-func (s *Storage) Create(_ context.Context, _ *pb.Order) (string, error) {
-	panic("implement me")
-}
-
-func (s *Storage) UpdateStatus(ctx context.Context, statusID, orderID string) (bool, error) {
-	result := s.db.WithContext(ctx).Model(&order{ID: orderID}).Update("order_status_id", statusID)
-	return result.RowsAffected > 0, result.Error
 }
