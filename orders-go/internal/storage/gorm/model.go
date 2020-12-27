@@ -14,7 +14,7 @@ type order struct {
 	UserID          string
 	OrderStatusID   int
 	CreatedAt       time.Time
-	OrderStatus     orderStatus     `gorm:"foreignKey:OrderStatusID"`
+	OrderStatus     orderStatus
 	OrderItems      []orderItem     `gorm:"foreignKey:OrderID"`
 	ShippingAddress shippingAddress `gorm:"embedded"`
 	Total           money           `gorm:"embedded;embeddedPrefix:total_"`
