@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/kelseyhightower/envconfig"
@@ -17,6 +18,7 @@ import (
 	"github.com/demeero/shop-sandbox/orders/internal/service"
 	"github.com/demeero/shop-sandbox/orders/internal/storage/gorm"
 	"github.com/demeero/shop-sandbox/orders/internal/storage/sql"
+	"github.com/demeero/shop-sandbox/orders/internal/storage/squirrel"
 )
 
 func main() {
@@ -44,11 +46,13 @@ func main() {
 }
 
 func createRepo(cfg config.Repository) (service.Repository, error) {
-	switch cfg.Name {
+	switch strings.ToLower(cfg.Name) {
 	case "sql":
 		return sql.New(cfg.Datasource)
 	case "gorm":
 		return gorm.New(cfg.Datasource)
+	case "squirrel":
+		return squirrel.New(cfg.Datasource)
 	}
 	return nil, errors.New("unknown repo name")
 }

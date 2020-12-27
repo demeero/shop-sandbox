@@ -1,14 +1,10 @@
-package sql
+package squirrel
 
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/golang/protobuf/ptypes"
 
 	catalogPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/catalog/v1beta1"
 	moneyPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/money/v1"
@@ -16,32 +12,65 @@ import (
 
 	"github.com/demeero/shop-sandbox/orders/internal/storage/pagetoken"
 	"github.com/demeero/shop-sandbox/orders/internal/storage/tx"
+
+	sq "github.com/Masterminds/squirrel"
+	"github.com/golang/protobuf/ptypes"
 )
 
 type Storage struct {
-	db *sql.DB
+	db   *sql.DB
+	psql sq.StatementBuilderType
 }
 
-func New(datasource string) (*Storage, error) {
-	db, err := sql.Open("pgx", datasource)
+func New(ds string) (*Storage, error) {
+	db, err := sql.Open("pgx", ds)
 	if err != nil {
 		return nil, err
 	}
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
-	return &Storage{db: db}, nil
+	return &Storage{db: db, psql: sq.StatementBuilder.PlaceholderFormat(sq.Dollar)}, nil
+}
+
+func (s *Storage) Create(ctx context.Context, o *orderPb.Order) (string, error) {
+	total := o.GetTotal()
+	addr := o.GetShippingAddress()
+	queryOrder := s.psql.Insert(`"order"`).
+		Columns("user_id", "order_status_id", "total_units", "total_nanos", "contact_name", "phone", "city",
+			"address1", "address2").
+		Values(o.GetUserId(), o.GetStatus(), total.GetUnits(), total.GetNanos(), addr.GetContactName(), addr.GetPhone(),
+			addr.GetCity(), addr.GetAddress1(), addr.GetAddress2()).
+		Suffix("RETURNING id")
+
+	var id string
+
+	queryOrderItem := s.psql.Insert("order_item").
+		Columns("quantity", "total_units", "total_nanos", "product_id", "product_name", "order_id")
+	for _, oi := range o.GetItems() {
+		a := oi.GetAmount()
+		p := oi.GetProduct()
+		queryOrderItem = queryOrderItem.Values(oi.GetQuantity(), a.GetUnits(), a.GetNanos(), p.GetId(), p.GetName(), &id)
+	}
+
+	err := tx.Tx(ctx, s.db, func(tx *sql.Tx) error {
+		if err := queryOrder.RunWith(tx).QueryRowContext(ctx).Scan(&id); err != nil {
+			return err
+		}
+		_, err := queryOrderItem.RunWith(tx).ExecContext(ctx)
+		return err
+	}, nil)
+	return id, err
 }
 
 func (s *Storage) UpdateStatus(ctx context.Context, statusID, orderID string) (bool, error) {
 	var updated bool
 	err := tx.Tx(ctx, s.db, func(tx *sql.Tx) error {
-		q := `
-			UPDATE "order"
-			SET order_status_id=$1
-			WHERE id = $2
-		`
-		res, err := tx.ExecContext(ctx, q, statusID, orderID)
+		res, err := s.psql.Update(`"order"`).
+			Where(sq.Eq{"id": orderID}).
+			Set("order_status_id", statusID).
+			RunWith(tx).
+			ExecContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -57,49 +86,8 @@ func (s *Storage) UpdateStatus(ctx context.Context, statusID, orderID string) (b
 	return updated, err
 }
 
-func (s *Storage) Create(ctx context.Context, order *orderPb.Order) (string, error) {
-	var orderID string
-	err := tx.Tx(ctx, s.db, func(tx *sql.Tx) error {
-		insertOrderQ := `
-			INSERT INTO "order" (user_id, order_status_id, total_units, total_nanos, contact_name, phone, city, address1, address2) 
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id 
-		`
-		total := order.GetTotal()
-		address := order.GetShippingAddress()
-		err := tx.QueryRowContext(ctx, insertOrderQ, order.GetUserId(), order.GetStatus(), total.GetUnits(),
-			total.GetNanos(), address.GetContactName(), address.GetPhone(), address.GetCity(), address.GetAddress1(), address.GetAddress2()).
-			Scan(&orderID)
-		if err != nil {
-			return err
-		}
-
-		insertOrderItemQ := `
-			INSERT INTO order_item (quantity, total_units, total_nanos, product_id, product_name, order_id) 
-			VALUES ($1, $2, $3, $4, $5, $6)
-		`
-		for _, oi := range order.GetItems() {
-			amount := oi.GetAmount()
-			product := oi.GetProduct()
-			_, err := tx.ExecContext(ctx, insertOrderItemQ, oi.GetQuantity(), amount.GetUnits(), amount.GetNanos(),
-				product.GetId(), product.GetName(), orderID)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}, nil)
-	if err != nil {
-		return "", err
-	}
-	return orderID, nil
-}
-
 func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]*orderPb.Order, string, error) {
-	q, err := buildFetchOrdersQuery(req)
-	if err != nil {
-		return nil, "", err
-	}
-	rows, err := s.db.QueryContext(ctx, q)
+	rows, err := s.fetchOrders(ctx, req)
 	if err != nil {
 		return nil, "", err
 	}
@@ -148,18 +136,11 @@ func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]
 }
 
 func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*orderPb.OrderItem, error) {
-	q := `
-		SELECT id,
-			   quantity,
-			   total_units,
-			   total_nanos,
-			   product_id,
-			   product_name
-		FROM order_item
-		WHERE order_id = $1  
-	`
-
-	rows, err := s.db.QueryContext(ctx, q, orderID)
+	rows, err := s.psql.Select("id", "quantity", "total_units", "total_nanos", "product_id", "product_name").
+		From("order_item").
+		Where(sq.Eq{"order_id": orderID}).
+		RunWith(s.db).
+		QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -186,49 +167,36 @@ func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*order
 	return orderItems, nil
 }
 
-func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) (string, error) {
+func (s *Storage) fetchOrders(ctx context.Context, req *orderPb.ListOrdersRequest) (*sql.Rows, error) {
 	token := &pagetoken.PageToken{}
 	if err := token.Decode(req.GetPageToken()); err != nil {
-		return "", err
+		return nil, err
 	}
-	q := `
-		SELECT id,
-			   user_id,
-			   order_status_id,
-			   total_units,
-			   total_nanos,
-			   contact_name,
-			   phone,
-			   city,
-			   address1,
-			   address2,
-			   created_at
-		FROM "order"
-	`
+
+	q := s.psql.Select("id", "user_id", "order_status_id", "total_units", "total_nanos", "contact_name",
+		"phone", "city", "address1", "address2", "created_at").
+		From(`"order"`)
+
 	// filtering by id
 	if len(req.GetIds()) > 0 {
-		return q + " WHERE id IN(" + strings.Join(req.GetIds(), ",") + ")", nil
+		return q.Where(sq.Eq{"id": []string{strings.Join(req.GetIds(), ",")}}).RunWith(s.db).QueryContext(ctx)
 	}
 
 	// ordering
-	orderClause := ""
-	if req.GetSort() == orderPb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_CREATED_AT {
-		orderClause = "ORDER BY"
-	}
 	orderField := "created_at"
 	orderType := "DESC"
 	if req.GetOrder() == orderPb.ListOrdersRequestOrder_LIST_ORDERS_REQUEST_ORDER_ASC {
 		orderType = "ASC"
 	}
-	orderClause = fmt.Sprintf("%s %s %s", orderClause, orderField, orderType)
-
-	// pagination
-	whereClause := ""
-	if token.Valid() {
-		createdAt := token.CreatedAt.Format(time.RFC3339Nano)
-		whereClause = fmt.Sprintf("WHERE id < '%s' AND created_at <= '%s' ", token.ID, createdAt)
+	if req.GetSort() == orderPb.ListOrdersRequestSort_LIST_ORDERS_REQUEST_SORT_CREATED_AT {
+		q = q.OrderByClause("? "+orderType, orderField)
 	}
 
-	q = fmt.Sprintf("%s %s %s %s", q, whereClause, orderClause, "LIMIT "+strconv.Itoa(int(req.GetPageSize())))
-	return q, nil
+	// pagination
+	if token.Valid() {
+		q = q.Where(sq.And{sq.Lt{"id": token.ID}, sq.LtOrEq{"created_at": token.CreatedAt.Format(time.RFC3339Nano)}})
+	}
+	q = q.Limit(uint64(req.GetPageSize()))
+
+	return q.RunWith(s.db).QueryContext(ctx)
 }
