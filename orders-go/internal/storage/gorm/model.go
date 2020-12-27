@@ -10,7 +10,7 @@ type orderStatus struct {
 }
 
 type order struct {
-	ID              string `gorm:"primarykey"`
+	ID              string `gorm:"primarykey;default:gen_random_uuid()"`
 	UserID          string
 	OrderStatusID   int
 	CreatedAt       time.Time
@@ -34,7 +34,7 @@ type money struct {
 }
 
 type orderItem struct {
-	ID       string `gorm:"primarykey"`
+	ID       string `gorm:"primarykey;default:gen_random_uuid()"`
 	OrderID  string
 	Product  product `gorm:"embedded;embeddedPrefix:product_"`
 	Quantity uint32
