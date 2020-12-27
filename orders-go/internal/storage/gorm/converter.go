@@ -32,7 +32,7 @@ func ConvertOrder(order order) *orderPb.Order {
 			Address1:    order.ShippingAddress.Address1,
 			Address2:    order.ShippingAddress.Address2,
 		},
-		Status:     orderPb.Status(order.OrderStatusID),
+		Status:     orderPb.Status(order.OrderStatus.ID),
 		CreateTime: createTime,
 		Items:      ConvertOrderItems(order.OrderItems),
 	}

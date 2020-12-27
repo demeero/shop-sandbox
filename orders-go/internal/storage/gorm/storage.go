@@ -86,6 +86,7 @@ func (s *Storage) Create(_ context.Context, _ *pb.Order) (string, error) {
 	panic("implement me")
 }
 
-func (s *Storage) UpdateStatus(_ context.Context, _, _ string) (bool, error) {
-	panic("implement me")
+func (s *Storage) UpdateStatus(ctx context.Context, statusID, orderID string) (bool, error) {
+	result := s.db.WithContext(ctx).Model(&order{ID: orderID}).Update("order_status_id", statusID)
+	return result.RowsAffected > 0, result.Error
 }
