@@ -1,15 +1,15 @@
 package config
 
 type Config struct {
-	GRPC GRPC
-	SQL  SQL
+	GRPC       GRPC
+	Repository Repository
 }
 
 type GRPC struct {
 	Port int
 }
 
-type SQL struct {
-	Driver     string
+type Repository struct {
+	Name       string
 	Datasource string
 }

@@ -1,4 +1,4 @@
-package sql
+package pagetoken
 
 import (
 	"encoding/base64"
@@ -8,17 +8,21 @@ import (
 	"time"
 )
 
-type pageToken struct {
+type PageToken struct {
 	CreatedAt time.Time
-	UUID      string
+	ID        string
 }
 
-func (t pageToken) Encode() string {
-	key := fmt.Sprintf("%s,%s", t.CreatedAt.Format(time.RFC3339Nano), t.UUID)
+func (t PageToken) Encode() string {
+	key := fmt.Sprintf("%s,%s", t.CreatedAt.Format(time.RFC3339Nano), t.ID)
 	return base64.StdEncoding.EncodeToString([]byte(key))
 }
 
-func (t *pageToken) Decode(pageToken string) error {
+func (t PageToken) Valid() bool {
+	return t.ID != "" && !t.CreatedAt.IsZero()
+}
+
+func (t *PageToken) Decode(pageToken string) error {
 	if pageToken == "" {
 		return nil
 	}
@@ -35,6 +39,6 @@ func (t *pageToken) Decode(pageToken string) error {
 		return err
 	}
 	t.CreatedAt = createdAt
-	t.UUID = decodedTokenParts[1]
+	t.ID = decodedTokenParts[1]
 	return nil
 }

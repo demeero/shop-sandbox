@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/demeero/shop-sandbox/orders/internal/config"
 	"github.com/demeero/shop-sandbox/orders/internal/service"
+	"github.com/demeero/shop-sandbox/orders/internal/storage/gorm"
 	"github.com/demeero/shop-sandbox/orders/internal/storage/sql"
 )
 
@@ -29,7 +31,7 @@ func main() {
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 
-	repo, err := sql.New(cfg.SQL.Driver, cfg.SQL.Datasource)
+	repo, err := createRepo(cfg.Repository)
 	if err != nil {
 		log.Fatalf("failed create repository: %+v", err)
 	}
@@ -39,4 +41,14 @@ func main() {
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve GRPC: %v", err)
 	}
+}
+
+func createRepo(cfg config.Repository) (service.Repository, error) {
+	switch cfg.Name {
+	case "sql":
+		return sql.New(cfg.Datasource)
+	case "gorm":
+		return gorm.New(cfg.Datasource)
+	}
+	return nil, errors.New("unknown repo name")
 }

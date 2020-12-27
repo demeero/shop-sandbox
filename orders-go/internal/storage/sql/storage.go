@@ -13,14 +13,16 @@ import (
 	catalogPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/catalog/v1beta1"
 	moneyPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/money/v1"
 	orderPb "github.com/demeero/shop-sandbox/proto/gen/go/shop/order/v1beta1"
+
+	"github.com/demeero/shop-sandbox/orders/internal/storage/pagetoken"
 )
 
 type Storage struct {
 	db *sql.DB
 }
 
-func New(driver, datasource string) (*Storage, error) {
-	db, err := sql.Open(driver, datasource)
+func New(datasource string) (*Storage, error) {
+	db, err := sql.Open("pgx", datasource)
 	if err != nil {
 		return nil, err
 	}
@@ -92,10 +94,6 @@ func (s *Storage) Create(ctx context.Context, order *orderPb.Order) (string, err
 }
 
 func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]*orderPb.Order, string, error) {
-	pageSize := int(req.GetPageSize())
-	if pageSize == 0 {
-		pageSize = 1
-	}
 	q, err := buildFetchOrdersQuery(req)
 	if err != nil {
 		return nil, "", err
@@ -106,7 +104,7 @@ func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]
 	}
 	defer rows.Close()
 
-	orders := make([]*orderPb.Order, 0, pageSize)
+	orders := make([]*orderPb.Order, 0, req.GetPageSize())
 	var nextToken string
 	for i := 0; rows.Next(); i++ {
 		if err := rows.Err(); err != nil {
@@ -140,10 +138,10 @@ func (s *Storage) Fetch(ctx context.Context, req *orderPb.ListOrdersRequest) ([]
 		orders = append(orders, o)
 	}
 	ordersLen := len(orders)
-	if ordersLen == pageSize {
+	if ordersLen == int(req.GetPageSize()) {
 		last := orders[ordersLen-1]
 		createTime, _ := ptypes.Timestamp(last.GetCreateTime())
-		nextToken = pageToken{UUID: last.GetId(), CreatedAt: createTime}.Encode()
+		nextToken = pagetoken.PageToken{ID: last.GetId(), CreatedAt: createTime}.Encode()
 	}
 	return orders, nextToken, nil
 }
@@ -188,7 +186,7 @@ func (s *Storage) fetchOrderItems(ctx context.Context, orderID string) ([]*order
 }
 
 func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) (string, error) {
-	token := &pageToken{}
+	token := &pagetoken.PageToken{}
 	if err := token.Decode(req.GetPageToken()); err != nil {
 		return "", err
 	}
@@ -225,9 +223,9 @@ func buildFetchOrdersQuery(req *orderPb.ListOrdersRequest) (string, error) {
 
 	// pagination
 	whereClause := ""
-	if token.UUID != "" {
+	if token.ID != "" {
 		createdAt := token.CreatedAt.Format(time.RFC3339Nano)
-		whereClause = fmt.Sprintf("WHERE id < '%s' AND created_at <= '%s' ", token.UUID, createdAt)
+		whereClause = fmt.Sprintf("WHERE id < '%s' AND created_at <= '%s' ", token.ID, createdAt)
 	}
 
 	q = fmt.Sprintf("%s %s %s %s", q, whereClause, orderClause, "LIMIT "+strconv.Itoa(int(req.GetPageSize())))
