@@ -3,6 +3,7 @@ module github.com/demeero/shop-sandbox/orders
 go 1.15
 
 require (
+	github.com/Masterminds/squirrel v1.5.0
 	github.com/demeero/shop-sandbox/proto/gen/go v0.0.0-20201223151713-3a4c05e0f4a2
 	github.com/golang/protobuf v1.4.3
 	github.com/jackc/pgx/v4 v4.10.1
